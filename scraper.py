@@ -428,12 +428,15 @@ Respond with exactly one word: either 'documentation' or 'general'"""
             # Get query embedding
             query_embedding = self._get_embeddings([query])[0]
 
-            # Search in Qdrant (using new API for qdrant-client 1.16+)
-            search_results = qdrant.query_points(
+            # Search in Qdrant (using qdrant-client 1.16+ API)
+            search_response = qdrant.query_points(
                 collection_name=collection_name,
                 query=query_embedding,
                 limit=k
-            ).points
+            )
+
+            # Extract points from response
+            search_results = search_response.points
 
             # Format results
             results = []
