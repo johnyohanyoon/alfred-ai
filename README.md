@@ -13,6 +13,7 @@ A local RAG (Retrieval-Augmented Generation) pipeline for web scraping, document
 
 ## Architecture
 
+### Backend (Docker)
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Alfred    │────▶│   Qdrant    │     │   Ollama    │
@@ -26,10 +27,25 @@ A local RAG (Retrieval-Augmented Generation) pipeline for web scraping, document
 └─────────────┘
 ```
 
+### Full Flow with Alfred Mac App
+```
+User Query in Alfred App
+         ↓
+   alfred_router.py (Routing)
+         ↓
+    ┌────┴─────┐
+    │          │
+    ▼          ▼
+Documentation  General AI
+ (API/Qdrant)  (Ollama)
+```
+
 ## Prerequisites
 
+- **Python 3.11+** (for development or Alfred integration)
 - Docker and Docker Compose
 - [Ollama](https://ollama.ai) running with embedding models
+- **Optional:** [Alfred App](https://www.alfredapp.com/) (macOS only, for launcher integration)
 
 ### Required Ollama Models
 
@@ -41,12 +57,25 @@ ollama pull all-minilm
 ollama pull llama3.2:1b
 ```
 
+## Project Structure
+```
+alfred-ai/
+├── main.py              # FastAPI application
+├── scraper.py           # Web scraping and search logic
+├── cache.py             # Redis caching layer
+├── alfred_router.py     # Alfred Mac App integration
+├── docker-compose.yml   # Service orchestration
+├── requirements.txt     # Python dependencies
+├── tests/              # Test suite
+└── scripts/            # Utility scripts
+```
+
 ## Quick Start
 
 ### 1. Clone and Configure
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/alfred-ai.git
+git clone https://github.com/johnyohanyoon/alfred-ai.git
 cd alfred-ai
 cp .env.example .env
 ```
@@ -84,6 +113,36 @@ curl http://localhost:6333/collections
 - Web Interface: http://localhost:8080
 - API Docs: http://localhost:8080/docs
 - Qdrant Dashboard: http://localhost:6333/dashboard
+
+## Optional: Alfred Mac App Integration
+
+Alfred AI can integrate with the [Alfred App](https://www.alfredapp.com/) (by Running with Crayons Ltd) for quick access from your macOS launcher.
+
+**Disclaimer:** This integration is a third-party workflow. Alfred AI is not affiliated with or endorsed by Running with Crayons Ltd.
+
+### Setup
+
+1. **Install alfred_router.py as Alfred Workflow**
+```bash
+# Make executable
+chmod +x alfred_router.py
+```
+In Alfred: Create new workflow
+Add "Script Filter" with:
+Language: /usr/bin/python3
+Script: /path/to/alfred_router.py "{query}"
+
+2. **Configure Environment**
+```bash
+# In your shell profile (~/.zshrc or ~/.bashrc)
+export ALFRED_AI_URL="http://localhost:8080"
+export OLLAMA_HOST="http://localhost:11434"
+```
+
+3. **Usage**
+- Press Alfred hotkey (default: `⌘ Space`)
+- Type your keyword (e.g., `ai docker networking`)
+- See instant results from your knowledge base
 
 ## API Usage
 
@@ -232,3 +291,5 @@ docker-compose up -d
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+Copyright (c) 2025 John Yoon
