@@ -6,7 +6,7 @@ Redis-based caching layer with graceful degradation
 import redis
 import json
 import hashlib
-from typing import Optional, Dict, Any
+from typing import Dict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class QueryCache:
 
         self.ttl_seconds = 3600  # 1 hour default
 
-    def get(self, query: str, filters: Dict = None) -> Optional[Dict]:
+    def get(self, query: str, filters: Dict | None = None) -> Dict | None:
         """
         Get cached response.
 
@@ -62,6 +62,7 @@ class QueryCache:
 
             if cached:
                 logger.info(f"Cache HIT for key: {key[:16]}...")
+                assert isinstance(cached, str), "cached should be str with decode_responses=True"
                 return json.loads(cached)
 
             logger.debug(f"Cache MISS for key: {key[:16]}...")
@@ -110,7 +111,7 @@ class QueryCache:
         except Exception as e:
             logger.error(f"Cache SET unexpected error: {e}")
 
-    def _make_key(self, query: str, filters: Dict = None) -> str:
+    def _make_key(self, query: str, filters: Dict | None = None) -> str:
         """
         Generate deterministic cache key using SHA256 hash.
         """

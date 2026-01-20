@@ -17,8 +17,8 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter
 
 # Document processing
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 
 # Caching
 from cache import QueryCache
@@ -36,7 +36,7 @@ class WebScraper:
         self.embedding_model = os.getenv('EMBEDDING_MODEL', 'all-minilm')
 
         # Initialize clients
-        self.qdrant_client = None
+        self.qdrant_client: QdrantClient | None = None
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
@@ -44,10 +44,12 @@ class WebScraper:
         )
 
         # Initialize cache
+        self.cache: QueryCache | None = None
+
         try:
             self.cache = QueryCache(
                 host=os.getenv("REDIS_HOST", "redis"),
-                port=int(os.getenv("REDIS_PORT", 6379))
+                port=int(os.getenv("REDIS_PORT", "6379"))
             )
             logger.info("Query cache initialized")
         except Exception as e:
@@ -251,7 +253,7 @@ class WebScraper:
             logger.error(f"Failed to get collections: {e}")
             return []
 
-    def route_query(self, query: str, routing_rules: Dict[str, List[str]] = None) -> Dict[str, Any]:
+    def route_query(self, query: str) -> Dict[str, Any] | None:
         """Intelligently route queries using LLM with dynamic collection rules"""
         try:
             # Get available collections
@@ -362,7 +364,12 @@ Respond with exactly one word: either 'documentation' or 'general'"""
             parsed_base = urlparse(base_url)
 
             for link in soup.find_all('a', href=True):
-                href = link['href']
+                href = link.get('href')
+
+                # Skip if href is not a string
+                if not href or not isinstance(href, str):
+                    continue
+
                 # Convert relative URLs to absolute
                 if href.startswith('/'):
                     full_url = urljoin(base_url, href)
@@ -414,12 +421,15 @@ Respond with exactly one word: either 'documentation' or 'general'"""
         if not self.qdrant_client:
             raise Exception("Qdrant client not initialized")
 
+
+        qdrant = self.qdrant_client
+
         try:
             # Get query embedding
             query_embedding = self._get_embeddings([query])[0]
 
             # Search in Qdrant
-            search_results = self.qdrant_client.search(
+            search_results = qdrant.search(
                 collection_name=collection_name,
                 query_vector=query_embedding,
                 limit=k

@@ -37,12 +37,19 @@ class AlfredRouter:
             # Fallback to general if routing fails
             return {"route": "general", "reason": f"Routing failed: {str(e)}"}
 
-    def search_documentation(self, query: str, collection: str = None) -> List[Dict[str, Any]]:
+    def search_documentation(self, query: str, collection: str | None = None) -> List[Dict[str, Any]]:
         """Search documentation using Alfred AI"""
         try:
+            # Build payload
+            payload = {"query": query, "k": 3}
+
+            # Add collection if provided
+            if collection:
+                payload["collection"] = collection
+
             response = requests.post(
                 f"{self.alfred_ai_url}/api/search",
-                json={"query": query, "k": 3},
+                json=payload,
                 timeout=10
             )
 
@@ -51,7 +58,7 @@ class AlfredRouter:
             else:
                 return []
 
-        except Exception as e:
+        except Exception:
             return []
 
     def query_general_ai(self, query: str) -> str:
@@ -93,7 +100,7 @@ class AlfredRouter:
             })
             return alfred_items
 
-        for i, result in enumerate(results[:3]):  # Top 3 results
+        for result in results[:3]:  # Top 3 results
             title = result["text"][:80] + "..." if len(result["text"]) > 80 else result["text"]
             subtitle = f"Source: {result['source']} (Score: {result['score']:.2f})"
 
@@ -131,7 +138,13 @@ class AlfredRouter:
         if route == "documentation":
             # Search documentation
             collection = routing_info.get("collection")
-            results = self.search_documentation(query, collection)
+
+            # Only search if we have a collection, otherwise use default
+            if collection:
+                results = self.search_documentation(query, collection)
+            else:
+                results = self.search_documentation(query)
+
             alfred_items = self.format_documentation_results(results, query)
 
             # Add routing info as subtitle to first item

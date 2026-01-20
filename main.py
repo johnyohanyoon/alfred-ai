@@ -3,9 +3,8 @@ Alfred AI - RAG Pipeline
 Web scraping with vector storage and semantic search
 """
 
-import os
 import logging
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 
 # FastAPI imports
@@ -13,6 +12,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from contextlib import asynccontextmanager
 
 # Core functionality
 from scraper import WebScraper
@@ -38,11 +38,33 @@ class BulkScrapeRequest(BaseModel):
 class QueryRouteRequest(BaseModel):
     query: str = Field(..., min_length=1)
 
-# Initialize FastAPI
+# Lifespan Context Manager
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Initialize scraper on startup"""
+    global scraper
+    try:
+        scraper = WebScraper()
+        logger.info("Alfred AI started successfully")
+
+        # App runs
+        yield
+
+        # Shutdown
+        logger.info("Shutting down...")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize: {e}")
+
+# Global scraper instance
+scraper = None
+
+# FastAPI App Initialization
 app = FastAPI(
-    title="Alfred AI",
-    description="RAG pipeline with web scraping and vector search",
-    version="1.0.0"
+    title="Alfred AI v1.1",
+    description="...",
+    version="1.1.0",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -53,19 +75,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Global scraper instance
-scraper = None
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize scraper on startup"""
-    global scraper
-    try:
-        scraper = WebScraper()
-        logger.info("Alfred AI started successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize: {e}")
 
 @app.get("/", response_class=HTMLResponse)
 async def web_interface():
