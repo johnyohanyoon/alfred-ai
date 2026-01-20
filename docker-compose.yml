@@ -6,7 +6,6 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.7.4
     container_name: alfred-qdrant
-    user: "99:100"
     restart: unless-stopped
     ports:
       - "127.0.0.1:6333:6333"
@@ -28,7 +27,6 @@ services:
   redis:
     image: redis:7.2-alpine
     container_name: alfred-redis
-    user: "99:100"
     restart: unless-stopped
     command: >
       redis-server
