@@ -4,7 +4,7 @@ version: '3.8'
 services:
   # Qdrant Vector Database
   qdrant:
-    image: qdrant/qdrant:v1.7.4
+    image: qdrant/qdrant:v1.12.0
     container_name: alfred-qdrant
     restart: unless-stopped
     ports:
